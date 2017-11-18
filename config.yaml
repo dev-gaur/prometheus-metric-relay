@@ -1,0 +1,16 @@
+--- 
+cron_interval_seconds: 3
+metrics: 
+  - process_cpu_seconds_total
+  - node_boot_time
+  - node_cpu
+  - node_memory_Inactive
+  - node_memory_MemTotal
+  - up
+prometheus: 
+  host: localhost
+  port: 9090
+target: 
+  host: localhost
+  port: 8888
+worker_pool_size: 10

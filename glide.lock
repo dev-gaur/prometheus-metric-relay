@@ -1,0 +1,12 @@
+hash: 7c2a84737f639f1f24ac260b94785453e080eca494cd82851d4e474929753483
+updated: 2017-11-17T18:41:46.653579791+05:30
+imports:
+- name: github.com/robfig/cron
+  version: 2315d5715e36303a941d907f038da7f7c44c773b
+- name: gopkg.in/yaml.v2
+  version: 287cf08546ab5e7e37d55a84f7ed3fd1db036de5
+testImports:
+- name: github.com/stretchr/testify
+  version: 2aa2c176b9dab406a6970f6a55f513e8a8c8b18f
+  subpackages:
+  - require
