@@ -15,6 +15,7 @@ type url struct {
 
 type configuration struct {
 	WorkerPoolSize      int      `yaml:"worker_pool_size"`
+	TaskQueueSize       int      `yaml:"task_queue_size"`
 	CronIntervalSeconds int      `yaml:"cron_interval_seconds"`
 	Metrics             []string `yaml:"metrics"`
 	Target              url      `yaml:"target"`

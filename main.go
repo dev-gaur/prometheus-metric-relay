@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,12 +11,13 @@ import (
 	"hdd/scout/prometheusapi"
 	"hdd/scout/util"
 
+	"github.com/dev-gaur/workers"
 	"github.com/robfig/cron"
 )
 
 type payload []byte
 
-func pipeMetric(metricname string, client http.Client, done chan struct{}) {
+func pipeMetric(metricname string, client http.Client) error {
 	fmt.Printf("\tGOROUTINE FOR METRIC : %s\n\n", metricname)
 
 	promQueryEndpoint := "http://" + config.Config.Prometheus.Host + ":" + config.Config.Prometheus.Port + "/api/v1/query"
@@ -30,52 +30,57 @@ func pipeMetric(metricname string, client http.Client, done chan struct{}) {
 	jsonResponse, err = util.SendGetRequest(&client, promQueryEndpoint, "query", metricname)
 
 	if err != nil {
-		log.Println(err)
-		close(done)
-		return
+		return err
 	}
 
 	err = json.Unmarshal(jsonResponse, &queryResult)
 
 	if err != nil {
-		log.Println(err)
-		close(done)
-		return
+		return err
 	}
 
 	postResponse, err = util.PostJSON(&client, supervisorEndpoint, queryResult.Data)
 
 	if err != nil {
-		log.Println("Error occured while Posting metrics to Supervisor.")
-		log.Println(err)
-		close(done)
-		return
+		return err
 	}
 
 	fmt.Printf("Response from PostJson :\n %#v \n\n", string(postResponse))
+
+	return nil
 }
 
 func main() {
 	fmt.Println("Launching....")
+	errChan := make(chan error, 10)
+	wrap, pooldone := make(chan struct{}), make(chan struct{})
+
+	done := make(chan struct{})
+	go func() {
+		for {
+			var c int
+			fmt.Scanf("%d", c)
+
+			if c == 0 {
+				close(done)
+				break
+			}
+		}
+	}()
 
 	cronString := "*/" + strconv.FormatInt(int64(config.Config.CronIntervalSeconds), 10) + " * * * * *"
-
-	//	promQueryEndpoint := "http://" + config.Config.Prometheus.Host + ":" + config.Config.Prometheus.Port + "/api/v1/query"
-	//	supervisorEndpoint := "http://" + config.Config.Target.Host + ":" + config.Config.Target.Port + "/post"
-
-	//	fmt.Println(cronString)
-	//	fmt.Println(promQueryEndpoint)
-	//	fmt.Println(supervisorEndpoint)
 
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	c := cron.New()
-	//var p *workers.Pool = workers.GetPool()
-	//p.Run()
+	var newtask = workers.NewTask
+	n := int(config.Config.WorkerPoolSize)
+	q := int(config.Config.TaskQueueSize)
 
-	done := make(chan struct{})
+	var pool = workers.GetPool(n, errChan, wrap, pooldone, q)
+
+	c := cron.New()
 
 	c.AddFunc(cronString, func() {
 
@@ -84,7 +89,11 @@ func main() {
 		fmt.Println("\tCRON INTERVAL : ", time.Now())
 
 		for i := range metricnames {
-			pipeMetric(metricnames[i], client, done)
+			task := newtask(func() error {
+				return pipeMetric(metricnames[i], client)
+			})
+
+			pool.AssignTask(task)
 		}
 
 	})
@@ -93,4 +102,8 @@ func main() {
 	<-done
 	fmt.Println("About to quit...")
 	c.Stop()
+	fmt.Println("SHUTTING DOWN THE worker pool...")
+	close(wrap)
+	fmt.Println("WAITING for pooldone signal")
+	<-pooldone
 }

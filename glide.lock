@@ -1,6 +1,8 @@
-hash: 7c2a84737f639f1f24ac260b94785453e080eca494cd82851d4e474929753483
-updated: 2017-11-17T18:41:46.653579791+05:30
+hash: b8edca76d28e5b9a0a04d07dedced4eb99ca88c58865570c20de508cf2f3fa9e
+updated: 2017-11-19T02:56:24.65684268+05:30
 imports:
+- name: github.com/dev-gaur/workers
+  version: f9d54bdff2cb43ce6caecff281f669ab8817f4b1
 - name: github.com/robfig/cron
   version: 2315d5715e36303a941d907f038da7f7c44c773b
 - name: gopkg.in/yaml.v2
